@@ -16,8 +16,8 @@ class Lexer {
     public static function run($source) {
         $tokens = array();
         $previousOffset = "";
-     
-        foreach($source as $number => $line) {            
+
+        foreach($source as $number => $line) {
             $offset = 0;
             while($offset < strlen($line)) {
                 $result = static::_match($line, $number, $offset);
@@ -29,13 +29,13 @@ class Lexer {
                 $previousOffset = $offset;
             }
         }
-     
+
         return $tokens;
     }
 
     protected static function _match($line, $number, $offset) {
         $string = substr($line, $offset);
-     
+
         foreach(static::$_terminals as $pattern => $name) {
             if(preg_match($pattern, $string, $matches)) {
                 return array(
@@ -45,7 +45,7 @@ class Lexer {
                 );
             }
         }
-     
+
         return false;
     }
 }
@@ -108,13 +108,20 @@ foreach ($result as $value) {
         } else {
             $currentWord .= $value["match"];
         }
-        
+
     }
     if ($value["token"] === "T_OPEN_PARENTHESIS") {
         $keys[] = array("mode" => "open_parenthesis");
         continue;
     }
     if ($value["token"] === "T_CLOSE_PARENTHESIS") {
+        if ($currentWord !== "") {
+            $keys[] = array(
+                "word" => $currentWord,
+                "mode" => $currentMode ? $currentMode : "word"
+            );
+        }
+        $currentWord = "";
         $keys[] = array("mode" => "close_parenthesis");
         continue;
     }
@@ -142,5 +149,28 @@ if ($currentWord !== "") {
 var_dump($result);
 var_dump($input);
 var_dump($keys);
+
+$end = array();
+
+foreach ($keys as $currentKey) {
+    if ($currentKey["mode"] === "open_parenthesis") {
+        $end[] = "(";
+    } elseif ($currentKey["mode"] === "close_parenthesis") {
+        $end[] = ")";
+    } elseif ($currentKey["mode"] === "or") {
+        $end[] = "OR";
+    } elseif ($currentKey["mode"] === "and") {
+        $end[] = "AND";
+    }
+    elseif ($currentKey["mode"] === "word") {
+        $end[] = $currentKey["word"];
+    } elseif ($currentKey["mode"] === "string") {
+        $end[] = '"'.$currentKey["word"].'"';
+    } elseif ($currentKey["mode"] === "partial") {
+        $end[] = '~'.$currentKey["word"];
+    }
+}
+
+var_dump(implode(" ", $end));
 ?>
 
